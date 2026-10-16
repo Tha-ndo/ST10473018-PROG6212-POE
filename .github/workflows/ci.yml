@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check docs folder exists
+        run: test -d docs || { echo "docs folder is missing"; exit 1; }
+
+      - name: Check required files
+        run: |
+          for f in ERD.png API_Endpoint_Plan.pdf Thando_Schema.sql; do
+            test -f "docs/$f" || { echo "Missing docs/$f"; exit 1; }
+          done
+          echo "All required files present."
