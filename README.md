@@ -1,4 +1,4 @@
-# Thando — Part 1: System Planning and Database
+Thando — Part 1: System Planning and Database
 
 ## Overview
 
@@ -65,10 +65,5 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and va
 
 **Green build screenshot:**
 
-`[ screenshot placeholder — add your own after a successful Actions run ]`
+![Green build](docs/green-build.png)
 
-## Video Walkthrough
-
-**YouTube (unlisted):** attached 
-
-The video walks through the planning documents, the ERD decisions, the endpoint plan choices, and runs the SQL script live in SSMS.
