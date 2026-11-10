@@ -9,12 +9,17 @@ using Microsoft.OpenApi.Models;
 using RaceDay.Api.Data;
 using RaceDay.Api.Models;
 using RaceDay.Api.Services;
+using RaceDay.Api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<RaceDayDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+// Part 3: Azure Blob Storage for event banners and profile pictures.
+builder.Services.Configure<AzureStorageOptions>(builder.Configuration.GetSection(AzureStorageOptions.SectionName));
+builder.Services.AddSingleton<IFileStorageService, AzureBlobStorageService>();
 var jwtKey = builder.Configuration["Jwt:Key"]
              ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 
@@ -108,7 +113,9 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "RaceDay API v1"));
 
-app.UseHttpsRedirection();
+// The MVC front end calls the API over plain HTTP during development / inside Docker.
+// Redirecting would make HttpClient drop the Authorization header, so only redirect in production.
+if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
