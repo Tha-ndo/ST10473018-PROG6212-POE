@@ -1,0 +1,40 @@
+@model LoginViewModel
+@{ ViewData["Title"] = "Log in"; ViewData["FullWidth"] = true; }
+
+<div class="auth-wrap">
+    <section class="auth-side" aria-hidden="true">
+        <p class="eyebrow mb-2">RaceDay</p>
+        <h2>Lace up.<br />Line up.<br /><span class="accent">Let's go.</span></h2>
+        <p>Enter road runs, walks and cycle tours across South Africa, track your race numbers and see your finish times the moment they're published.</p>
+    </section>
+
+    <section class="auth-form">
+        <div class="rd-card">
+            <div class="rd-card-body p-4 p-md-5">
+                <p class="eyebrow mb-1">Welcome back</p>
+                <h1 class="h2 mb-4">Log in</h1>
+
+                <form asp-action="Login" method="post" novalidate>
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div asp-validation-summary="ModelOnly"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" autocomplete="email" autofocus placeholder="you@example.com" />
+                        <span asp-validation-for="Email"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Password"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100" data-busy-text="Logging in…">Log in <i class="bi bi-arrow-right"></i></button>
+                </form>
+
+                <p class="text-center text-muted mt-4 mb-0">New to RaceDay? <a asp-action="Register" asp-route-returnUrl="@Model.ReturnUrl">Create an account</a></p>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

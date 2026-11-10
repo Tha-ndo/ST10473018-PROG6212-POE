@@ -1,0 +1,19 @@
+@{
+    var items = new (string Key, string Css, string Icon)[]
+    {
+        (FlashExtensions.SuccessKey, "flash-success", "bi-check-circle-fill"),
+        (FlashExtensions.WarningKey, "flash-warning", "bi-exclamation-triangle-fill"),
+        (FlashExtensions.ErrorKey, "flash-error", "bi-x-octagon-fill"),
+    };
+}
+@foreach (var (key, css, icon) in items)
+{
+    if (TempData[key] is string message && !string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert flash @css alert-dismissible fade show mt-3" role="@(css == "flash-error" ? "alert" : "status")">
+            <i class="bi @icon" aria-hidden="true"></i>
+            <div class="flex-grow-1">@message</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+}

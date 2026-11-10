@@ -1,0 +1,111 @@
+@model CategoriesPageViewModel
+@{
+    var e = Model.Event;
+    ViewData["Title"] = $"Categories · {e.Title}";
+}
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li><li class="breadcrumb-item active" aria-current="page">@e.Title</li></ol></nav>
+        <h1>@e.Title</h1>
+        <partial name="_OrganiserEventTabs" model='(e.EventId, "Categories")' />
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <section class="rd-card">
+                <div class="rd-card-header">
+                    <h2>Distance &amp; age categories</h2>
+                    <span class="text-muted small">@e.Categories.Count categor@(e.Categories.Count == 1 ? "y" : "ies")</span>
+                </div>
+                @if (e.Categories.Count == 0)
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-signpost-split icon" aria-hidden="true"></i>
+                        <h3>No categories yet</h3>
+                        <p>Athletes can only enrol once there's at least one category. Add one using the form.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table rd-table">
+                            <thead><tr><th>Name</th><th>Distance (km)</th><th>Fee (R)</th><th>Max</th><th>Enrolled</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+                            <tbody>
+                                @foreach (var c in e.Categories)
+                                {
+                                    var formId = $"cat-{c.CategoryId}";
+                                    var enrolled = Model.ConfirmedPerCategory.GetValueOrDefault(c.CategoryId);
+                                    var pct = c.MaxParticipants == 0 ? 0 : Math.Min(100, (int)Math.Round(100.0 * enrolled / c.MaxParticipants));
+                                    <tr>
+                                        <td><input form="@formId" name="Name" value="@c.Name" class="form-control form-control-sm" required maxlength="50" aria-label="Category name" /></td>
+                                        <td style="width:110px"><input form="@formId" name="DistanceKm" value="@c.DistanceKm.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0.01" class="form-control form-control-sm" required aria-label="Distance in km" /></td>
+                                        <td style="width:110px"><input form="@formId" name="EntryFee" value="@c.EntryFee.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" class="form-control form-control-sm" required aria-label="Entry fee" /></td>
+                                        <td style="width:110px"><input form="@formId" name="MaxParticipants" value="@c.MaxParticipants" type="number" min="1" class="form-control form-control-sm" required aria-label="Maximum participants" /></td>
+                                        <td style="min-width:110px">
+                                            <span class="fw-semibold">@enrolled</span>
+                                            <div class="capacity mt-1" title="@pct% full"><span style="width:@pct%"></span></div>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <form id="@formId" asp-action="UpdateCategory" method="post" class="d-inline">
+                                                <input type="hidden" name="CategoryId" value="@c.CategoryId" />
+                                                <input type="hidden" name="EventId" value="@e.EventId" />
+                                                <button type="submit" class="btn btn-sm btn-light" title="Save changes"><i class="bi bi-check2"></i><span class="visually-hidden">Save @c.Name</span></button>
+                                            </form>
+                                            <form asp-action="DeleteCategory" asp-route-id="@c.CategoryId" asp-route-eventId="@e.EventId" method="post" class="d-inline" data-confirm="Remove the @c.Name category?">
+                                                <button type="submit" class="btn btn-sm btn-light text-danger" title="Remove"><i class="bi bi-trash"></i><span class="visually-hidden">Remove @c.Name</span></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted px-4 py-3 mb-0 border-top"><i class="bi bi-info-circle"></i> Edit a row and press <i class="bi bi-check2"></i> to save. Categories with enrolments can't be removed.</p>
+                }
+            </section>
+        </div>
+
+        <div class="col-lg-4">
+            <section class="rd-card">
+                <div class="rd-card-header"><h3><i class="bi bi-plus-circle text-primary"></i> Add a category</h3></div>
+                <div class="rd-card-body">
+                    <form asp-action="AddCategory" method="post" novalidate>
+                        <input type="hidden" name="EventId" value="@e.EventId" />
+                        <div asp-validation-summary="ModelOnly"></div>
+                        <div class="mb-3">
+                            <label asp-for="NewCategory.Name" class="form-label"></label>
+                            <input asp-for="NewCategory.Name" name="Name" class="form-control" placeholder="e.g. 10km or Veterans 50+" />
+                            <span asp-validation-for="NewCategory.Name"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="NewCategory.DistanceKm" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="NewCategory.DistanceKm" name="DistanceKm" type="number" step="0.01" min="0.01" class="form-control" />
+                                <span class="input-group-text">km</span>
+                            </div>
+                            <span asp-validation-for="NewCategory.DistanceKm"></span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label asp-for="NewCategory.EntryFee" class="form-label"></label>
+                                <input asp-for="NewCategory.EntryFee" name="EntryFee" type="number" step="0.01" min="0" class="form-control" />
+                                <span asp-validation-for="NewCategory.EntryFee"></span>
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="NewCategory.MaxParticipants" class="form-label"></label>
+                                <input asp-for="NewCategory.MaxParticipants" name="MaxParticipants" type="number" min="1" class="form-control" />
+                                <span asp-validation-for="NewCategory.MaxParticipants"></span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" data-busy-text="Adding…"><i class="bi bi-plus-lg"></i> Add category</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,39 @@
+@model (EventSummaryDto Event, bool Enrolled)
+@{
+    var e = Model.Event;
+    string distance = e.MinDistanceKm is null ? "TBA"
+        : e.MinDistanceKm == e.MaxDistanceKm ? e.MinDistanceKm.Value.Km()
+        : $"{e.MinDistanceKm.Value.ToString("0.##")}–{e.MaxDistanceKm!.Value.Km()}";
+}
+<a class="event-row" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId">
+    <div class="event-row__date" aria-hidden="true">
+        <span class="dow">@e.EventDate.ToString("ddd")</span>
+        <span class="day">@e.EventDate.Day</span>
+        <span class="month">@e.EventDate.ToString("MMM yyyy")</span>
+    </div>
+    <div class="event-row__thumb">
+        @if (!string.IsNullOrEmpty(e.BannerImageUrl))
+        {
+            <img src="@e.BannerImageUrl" alt="" loading="lazy" />
+        }
+        else
+        {
+            <div class="banner-fallback banner-fallback--@e.EventType.ToLowerInvariant()"><i class="bi @StatusStyles.EventTypeIcon(e.EventType)" aria-hidden="true"></i></div>
+        }
+    </div>
+    <div class="event-row__body">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+            <partial name="_TypeChip" model="e.EventType" />
+            @if (Model.Enrolled)
+            {
+                <span class="badge-status badge-status--success"><i class="bi bi-check-circle-fill"></i>Enrolled</span>
+            }
+        </div>
+        <h3>@e.Title</h3>
+        <div class="meta"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> @e.VenueName, @e.City@(string.IsNullOrEmpty(e.Province) ? "" : $" · {e.Province}")</div>
+    </div>
+    <div class="event-row__side">
+        <span class="distance">@distance</span>
+        <span class="go">Details <i class="bi bi-chevron-right"></i></span>
+    </div>
+</a>

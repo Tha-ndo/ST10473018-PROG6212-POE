@@ -1,0 +1,70 @@
+@model MyEnrolmentsViewModel
+@{ ViewData["Title"] = "My enrolments"; }
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <p class="eyebrow mb-1">Athlete</p>
+        <h1>My enrolments</h1>
+        <p class="mb-0 mt-2">Every event you've entered, with your race number and enrolment status.</p>
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="stat-tile"><div class="icon"><i class="bi bi-calendar-check"></i></div><div><div class="value">@Model.Upcoming.Count</div><div class="label">Upcoming races</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--ink"><i class="bi bi-flag-fill"></i></div><div><div class="value">@Model.Past.Count</div><div class="label">Completed events</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--info"><i class="bi bi-x-circle"></i></div><div><div class="value">@Model.Cancelled.Count</div><div class="label">Cancelled</div></div></div></div>
+    </div>
+
+    @if (Model.Upcoming.Count + Model.Past.Count + Model.Cancelled.Count == 0)
+    {
+        <div class="rd-card empty-state">
+            <i class="bi bi-ticket-perforated icon" aria-hidden="true"></i>
+            <h3>No enrolments yet</h3>
+            <p>Find an event that gets your heart rate up and enrol in seconds.</p>
+            <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Browse events</a>
+        </div>
+    }
+    else
+    {
+        foreach (var (title, list, icon) in new[] { ("Upcoming", Model.Upcoming, "bi-calendar-event"), ("Past events", Model.Past, "bi-flag"), ("Cancelled", Model.Cancelled, "bi-x-circle") })
+        {
+            if (list.Count == 0) continue;
+            <section class="rd-card mb-4">
+                <div class="rd-card-header"><h2><i class="bi @icon text-muted"></i> @title</h2><span class="text-muted small">@list.Count</span></div>
+                <div class="table-responsive">
+                    <table class="table rd-table">
+                        <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Race no.</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+                        <tbody>
+                            @foreach (var en in list)
+                            {
+                                <tr>
+                                    <td class="title-cell"><a asp-controller="Events" asp-action="Details" asp-route-id="@en.EventId">@en.EventTitle</a></td>
+                                    <td>@en.EventDate.ToString("d MMM yyyy")</td>
+                                    <td>@en.CategoryName</td>
+                                    <td>@if (en.BibNumber is not null) { <span class="bib">@en.BibNumber</span> }</td>
+                                    <td><partial name="_StatusBadge" model="en.Status" /></td>
+                                    <td class="text-end">
+                                        @if (title == "Upcoming")
+                                        {
+                                            <form asp-action="CancelEnrolment" asp-route-id="@en.EnrolmentId" method="post" class="d-inline"
+                                                  data-confirm="Cancel your enrolment for @en.EventTitle (@en.CategoryName)?">
+                                                <button type="submit" class="btn btn-sm btn-light text-danger"><i class="bi bi-x-circle"></i> Cancel</button>
+                                            </form>
+                                        }
+                                        else if (title == "Past events")
+                                        {
+                                            <a class="btn btn-sm btn-light" asp-action="Results"><i class="bi bi-trophy"></i> Results</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+    }
+</div>

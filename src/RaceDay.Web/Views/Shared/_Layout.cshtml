@@ -1,0 +1,134 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, params string[] actions) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (actions.Length == 0 || actions.Any(a => string.Equals(a, action, StringComparison.OrdinalIgnoreCase))) ? "active" : "";
+    var roleClass = CurrentUser.IsOrganiser ? "role-organiser" : CurrentUser.IsParticipant ? "role-participant" : "role-guest";
+    var homeAction = CurrentUser.IsOrganiser ? Url.Action("Dashboard", "Organiser") : Url.Action("Index", "Home");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0F2A1F" />
+    <title>@(ViewData["Title"] is string t ? $"{t} · RaceDay" : "RaceDay")</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="app-shell @roleClass">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    @* ===== Left sidebar (inline on large screens, slide-out panel on phones) ===== *@
+    <aside class="sidebar offcanvas-lg offcanvas-start" id="sidebar" tabindex="-1" aria-label="Main navigation">
+        <div class="offcanvas-header d-lg-none">
+            <a class="rd-brand" href="@homeAction"><partial name="_BrandMark" /><span>Race<span class="accent">Day</span></span></a>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close menu"></button>
+        </div>
+
+        <div class="offcanvas-body sidebar-inner">
+            <a class="rd-brand d-none d-lg-inline-flex" href="@homeAction">
+                <partial name="_BrandMark" />
+                <span>Race<span class="accent">Day</span></span>
+            </a>
+
+            @if (CurrentUser.IsOrganiser)
+            {
+                <span class="role-pill role-pill--organiser"><i class="bi bi-megaphone-fill"></i> Organiser HQ</span>
+            }
+            else if (CurrentUser.IsParticipant)
+            {
+                <span class="role-pill role-pill--participant"><i class="bi bi-lightning-charge-fill"></i> Athlete</span>
+            }
+
+            <nav class="side-nav">
+                @if (CurrentUser.IsOrganiser)
+                {
+                    <p class="side-nav__label">Manage</p>
+                    <a class="side-nav__link @Active("Organiser", "Dashboard")" asp-controller="Organiser" asp-action="Dashboard"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                    <a class="side-nav__link @Active("Organiser", "CreateEvent")" asp-controller="Organiser" asp-action="CreateEvent"><i class="bi bi-plus-square"></i> New event</a>
+                    <a class="side-nav__link @Active("Organiser", "NewVenue")" asp-controller="Organiser" asp-action="NewVenue"><i class="bi bi-geo-alt"></i> Add venue</a>
+                }
+                else
+                {
+                    <p class="side-nav__label">Discover</p>
+                    <a class="side-nav__link @Active("Home", "Index") @Active("Events")" asp-controller="Home" asp-action="Index"><i class="bi bi-flag"></i> Events</a>
+                    @if (CurrentUser.IsParticipant)
+                    {
+                        <p class="side-nav__label">My racing</p>
+                        <a class="side-nav__link @Active("Participant", "Enrolments")" asp-controller="Participant" asp-action="Enrolments"><i class="bi bi-ticket-perforated"></i> My enrolments</a>
+                        <a class="side-nav__link @Active("Participant", "Results")" asp-controller="Participant" asp-action="Results"><i class="bi bi-trophy"></i> My results</a>
+                    }
+                }
+                @if (CurrentUser.IsAuthenticated)
+                {
+                    <p class="side-nav__label">Account</p>
+                    <a class="side-nav__link @Active("Profile")" asp-controller="Profile" asp-action="Index"><i class="bi bi-person-circle"></i> My profile</a>
+                }
+            </nav>
+
+            <div class="sidebar-foot">
+                @if (CurrentUser.IsAuthenticated)
+                {
+                    <div class="user-card">
+                        @if (!string.IsNullOrEmpty(CurrentUser.ProfilePictureUrl))
+                        {
+                            <img class="avatar" src="@CurrentUser.ProfilePictureUrl" alt="" />
+                        }
+                        else
+                        {
+                            <span class="avatar" aria-hidden="true">@CurrentUser.Initials</span>
+                        }
+                        <div class="user-card__text">
+                            <strong>@CurrentUser.FullName</strong>
+                            <small>@CurrentUser.Email</small>
+                        </div>
+                    </div>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="btn btn-sidebar w-100"><i class="bi bi-box-arrow-left"></i> Log out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="btn btn-volt w-100 mb-2" asp-controller="Account" asp-action="Register">Sign up free</a>
+                    <a class="btn btn-sidebar w-100" asp-controller="Account" asp-action="Login"><i class="bi bi-box-arrow-in-right"></i> Log in</a>
+                }
+            </div>
+        </div>
+    </aside>
+
+    <div class="app-main">
+        @* ===== Top bar on phones ===== *@
+        <header class="topbar d-lg-none">
+            <button class="btn btn-sidebar" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open menu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+            <a class="rd-brand" href="@homeAction"><partial name="_BrandMark" /><span>Race<span class="accent">Day</span></span></a>
+            <span style="width:42px"></span>
+        </header>
+
+        <main id="main" tabindex="-1">
+            @RenderSection("Hero", required: false)
+            <div class="@(ViewData["FullWidth"] is true ? "" : "container") position-relative" style="z-index: 2;">
+                <partial name="_Flash" />
+            </div>
+            @RenderBody()
+        </main>
+
+        <footer class="app-footer">
+            <div class="container d-flex flex-column flex-md-row justify-content-between gap-2">
+                <span>Road running, walking &amp; cycling events across South Africa.</span>
+                <span>&copy; @DateTime.Now.Year RaceDay</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,64 @@
+@model MyResultsViewModel
+@{ ViewData["Title"] = "My results"; }
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <p class="eyebrow mb-1">Athlete</p>
+        <h1>My results</h1>
+        <p class="mb-0 mt-2">Your personal race history across every completed event.</p>
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="stat-tile"><div class="icon"><i class="bi bi-flag-fill"></i></div><div><div class="value">@Model.RacesFinished</div><div class="label">Races finished</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--volt"><i class="bi bi-signpost-split"></i></div><div><div class="value">@Model.DistanceCovered.ToString("0.#")</div><div class="label">Kilometres raced</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--ink"><i class="bi bi-trophy-fill"></i></div><div><div class="value">@(Model.BestPosition?.Ordinal() ?? "—")</div><div class="label">Best finishing position</div></div></div></div>
+    </div>
+
+    @if (Model.Results.Count == 0)
+    {
+        <div class="rd-card empty-state">
+            <i class="bi bi-stopwatch icon" aria-hidden="true"></i>
+            <h3>No results yet</h3>
+            <p>Your finish times appear here once an organiser publishes them after the race.</p>
+            <a class="btn btn-primary" asp-action="Enrolments">See my enrolments</a>
+        </div>
+    }
+    else
+    {
+        <section class="rd-card">
+            <div class="rd-card-header"><h2>Race history</h2></div>
+            <div class="table-responsive">
+                <table class="table rd-table">
+                    <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Finish time</th><th>Position</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model.Results)
+                        {
+                            <tr>
+                                <td class="title-cell"><a asp-controller="Events" asp-action="Details" asp-route-id="@r.EventId" asp-fragment="results">@r.EventTitle</a></td>
+                                <td>@r.EventDate.ToString("d MMM yyyy")</td>
+                                <td>@r.CategoryName <span class="text-muted small">· @r.DistanceKm.Km()</span></td>
+                                <td class="font-monospace fw-semibold">@r.FinishTime.ToRaceTime()</td>
+                                <td>
+                                    @if (r.Position is int pos)
+                                    {
+                                        <span class="position-cell @(pos <= 3 ? $"podium-{pos}" : "")">@pos.Ordinal()</span>
+                                        <span class="text-muted small">out of @r.TotalFinishers.ToString("N0") finisher@(r.TotalFinishers == 1 ? "" : "s")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td><partial name="_StatusBadge" model="r.Status" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>

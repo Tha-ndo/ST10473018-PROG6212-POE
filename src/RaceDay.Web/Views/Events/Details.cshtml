@@ -1,0 +1,200 @@
+@model EventDetailsViewModel
+@{
+    var e = Model.Event;
+    ViewData["Title"] = e.Title;
+    ViewData["FullWidth"] = true;
+    var active = Model.ActiveEnrolment;
+    var finishers = Model.Results.Where(r => r.Status == "Finished").ToList();
+    var isOwner = CurrentUser.IsOrganiser && CurrentUser.UserId == e.OrganiserId;
+}
+
+@section Hero {
+<section class="event-hero">
+    <div class="bg">
+        @if (!string.IsNullOrEmpty(e.BannerImageUrl))
+        {
+            <img src="@e.BannerImageUrl" alt="Banner for @e.Title" />
+        }
+        else
+        {
+            <div class="banner-fallback banner-fallback--@e.EventType.ToLowerInvariant()"></div>
+        }
+    </div>
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                @if (isOwner)
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Organiser" asp-action="Dashboard">Dashboard</a></li>
+                }
+                else
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Events</a></li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">@e.Title</li>
+            </ol>
+        </nav>
+        <div class="mb-2"><partial name="_TypeChip" model="e.EventType" /></div>
+        <h1 class="mb-3">@e.Title</h1>
+        <div class="facts">
+            <span><i class="bi bi-calendar-event"></i> @e.EventDate.ToString("dddd, d MMMM yyyy")</span>
+            <span><i class="bi bi-geo-alt-fill"></i> @e.Venue.Name, @e.Venue.City</span>
+            @if (e.Categories.Count > 0)
+            {
+                <span><i class="bi bi-signpost-split"></i> @string.Join(" · ", e.Categories.Select(c => c.DistanceKm.Km()).Distinct())</span>
+            }
+        </div>
+        @if (isOwner)
+        {
+            <a class="btn btn-volt mt-3" asp-controller="Organiser" asp-action="EditEvent" asp-route-id="@e.EventId"><i class="bi bi-pencil-square"></i> Manage this event</a>
+        }
+    </div>
+</section>
+}
+
+<div class="container mt-4">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="rd-card mb-4">
+                <div class="rd-card-header"><h2>About the event</h2></div>
+                <div class="rd-card-body">
+                    @if (string.IsNullOrWhiteSpace(e.Description))
+                    {
+                        <p class="text-muted mb-0">The organiser hasn't added a description yet.</p>
+                    }
+                    else
+                    {
+                        <p style="white-space: pre-line;" class="mb-0">@e.Description</p>
+                    }
+                </div>
+            </section>
+
+            <section class="rd-card mb-4">
+                <div class="rd-card-header"><h2>Venue &amp; route</h2></div>
+                <div class="rd-card-body">
+                    <div class="d-flex gap-3">
+                        <div class="stat-tile p-0 border-0 shadow-none" style="height:auto;"><div class="icon"><i class="bi bi-geo-alt-fill"></i></div></div>
+                        <div>
+                            <div class="fw-semibold">@e.Venue.Name</div>
+                            <div class="text-muted">@string.Join(", ", new[] { e.Venue.AddressLine, e.Venue.City, e.Venue.Province }.Where(s => !string.IsNullOrWhiteSpace(s)))</div>
+                            @if (e.Venue.Latitude is not null && e.Venue.Longitude is not null)
+                            {
+                                <a class="small" target="_blank" rel="noopener"
+                                   href="https://www.google.com/maps/search/?api=1&query=@(e.Venue.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)),@(e.Venue.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                    Open in maps <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @if (Model.Results.Count > 0)
+            {
+                <section class="rd-card" id="results">
+                    <div class="rd-card-header">
+                        <h2><i class="bi bi-trophy text-warning"></i> Results</h2>
+                        <span class="text-muted small">@finishers.Count finisher@(finishers.Count == 1 ? "" : "s")</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table rd-table">
+                            <thead><tr><th>Pos</th><th>Athlete</th><th>Bib</th><th>Category</th><th>Time</th><th>Status</th></tr></thead>
+                            <tbody>
+                                @foreach (var r in Model.Results)
+                                {
+                                    var mine = CurrentUser.UserId == r.ParticipantId && CurrentUser.IsParticipant;
+                                    <tr class="@(mine ? "table-warning" : "")">
+                                        <td class="position-cell @(r.Position is >= 1 and <= 3 ? $"podium-{r.Position}" : "")">@(r.Position?.ToString() ?? "—")</td>
+                                        <td class="title-cell">@r.ParticipantName @if (mine) { <span class="badge text-bg-dark ms-1">You</span> }</td>
+                                        <td>@if (r.BibNumber is not null) { <span class="bib">@r.BibNumber</span> }</td>
+                                        <td>@r.CategoryName</td>
+                                        <td class="font-monospace">@r.FinishTime.ToRaceTime()</td>
+                                        <td><partial name="_StatusBadge" model="r.Status" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            }
+        </div>
+
+        <aside class="col-lg-5">
+            <section class="rd-card position-sticky" style="top: 1rem;">
+                <div class="rd-card-header">
+                    <h2>Categories</h2>
+                    @if (active is not null)
+                    {
+                        <partial name="_StatusBadge" model="active.Status" />
+                    }
+                </div>
+                <div class="rd-card-body">
+                    @if (e.Categories.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Categories for this event haven't been announced yet.</p>
+                    }
+                    else if (active is not null)
+                    {
+                        <div class="alert flash flash-success mb-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <div>You're enrolled in <strong>@active.CategoryName</strong>. Your race number is <span class="bib">@active.BibNumber</span></div>
+                        </div>
+                        <ul class="list-unstyled mb-3">
+                            @foreach (var c in e.Categories)
+                            {
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span><strong>@c.Name</strong> <span class="text-muted">· @c.DistanceKm.Km()</span></span>
+                                    <span>@c.EntryFee.Rand()</span>
+                                </li>
+                            }
+                        </ul>
+                        @if (!Model.IsPast)
+                        {
+                            <form asp-controller="Participant" asp-action="CancelEnrolment" asp-route-id="@active.EnrolmentId"
+                                  asp-route-returnUrl="@Url.Action("Details", new { id = e.EventId })" method="post"
+                                  data-confirm="Cancel your enrolment for @active.CategoryName?">
+                                <button type="submit" class="btn btn-light w-100"><i class="bi bi-x-circle"></i> Cancel my enrolment</button>
+                            </form>
+                        }
+                    }
+                    else
+                    {
+                        <form asp-controller="Participant" asp-action="Enrol" method="post">
+                            <input type="hidden" name="eventId" value="@e.EventId" />
+                            <fieldset @(Model.IsPast || !CurrentUser.IsParticipant ? "disabled" : "")>
+                                <legend class="visually-hidden">Choose a category</legend>
+                                @foreach (var (c, i) in e.Categories.Select((c, i) => (c, i)))
+                                {
+                                    <label class="category-option">
+                                        <input type="radio" name="categoryId" value="@c.CategoryId" checked="@(i == 0)" />
+                                        <span class="km">@c.DistanceKm.ToString("0.##")<small class="fs-6"> km</small></span>
+                                        <span><strong>@c.Name</strong><br /><small class="text-muted">Max @c.MaxParticipants.ToString("N0") athletes</small></span>
+                                        <span class="fee">@c.EntryFee.Rand()</span>
+                                    </label>
+                                }
+                            </fieldset>
+
+                            @if (Model.IsPast)
+                            {
+                                <p class="text-muted mt-3 mb-0"><i class="bi bi-flag-fill"></i> This event has taken place — entries are closed.</p>
+                            }
+                            else if (CurrentUser.IsParticipant)
+                            {
+                                <button type="submit" class="btn btn-primary btn-lg w-100 mt-2" data-busy-text="Enrolling…"><i class="bi bi-lightning-charge-fill"></i> Enrol now</button>
+                            }
+                            else if (!CurrentUser.IsAuthenticated)
+                            {
+                                <a class="btn btn-primary btn-lg w-100 mt-2" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", new { id = e.EventId })">Log in to enrol</a>
+                                <p class="text-center small text-muted mt-2 mb-0">No account? <a asp-controller="Account" asp-action="Register">Sign up free</a></p>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mt-3 mb-0"><i class="bi bi-info-circle"></i> Organisers can't enrol in events. Log in with a participant account to enter.</p>
+                            }
+                        </form>
+                    }
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>

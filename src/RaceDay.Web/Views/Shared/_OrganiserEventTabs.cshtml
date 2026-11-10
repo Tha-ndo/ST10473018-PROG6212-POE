@@ -1,0 +1,22 @@
+@model (int EventId, string Active)
+@{
+    var tabs = new (string Action, string Label, string Icon)[]
+    {
+        ("EditEvent", "Details", "bi-pencil-square"),
+        ("Categories", "Categories", "bi-signpost-split"),
+        ("Enrolments", "Enrolments", "bi-people"),
+        ("Results", "Results", "bi-stopwatch"),
+    };
+}
+<ul class="nav nav-pills gap-1 mt-3 organiser-tabs" role="tablist">
+    @foreach (var (action, label, icon) in tabs)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Active == action ? "active" : "")" asp-controller="Organiser" asp-action="@action" asp-route-id="@Model.EventId"
+               aria-current="@(Model.Active == action ? "page" : null)"><i class="bi @icon"></i> @label</a>
+        </li>
+    }
+    <li class="nav-item ms-auto">
+        <a class="nav-link" asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId"><i class="bi bi-eye"></i> Public page</a>
+    </li>
+</ul>

@@ -1,0 +1,104 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Organiser dashboard"; var next = Model.NextEvent; }
+
+@section Hero {
+<section class="page-band">
+    <div class="container d-flex flex-wrap justify-content-between align-items-end gap-3">
+        <div>
+            <p class="eyebrow mb-1">Organiser HQ</p>
+            <h1>Dashboard</h1>
+            <p class="mb-0 mt-2">Welcome back, @CurrentUser.FullName?.Split(' ')[0]. Here's how your events are tracking.</p>
+        </div>
+        <a class="btn btn-primary btn-lg" asp-action="CreateEvent"><i class="bi bi-plus-lg"></i> New event</a>
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3"><div class="stat-tile"><div class="icon icon--ink"><i class="bi bi-calendar3"></i></div><div><div class="value">@Model.Events.Count</div><div class="label">Events created</div></div></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="stat-tile"><div class="icon"><i class="bi bi-people-fill"></i></div><div><div class="value">@Model.TotalEnrolments.ToString("N0")</div><div class="label">Confirmed enrolments</div></div></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="stat-tile"><div class="icon icon--volt"><i class="bi bi-hourglass-split"></i></div><div><div class="value">@Model.Upcoming.Count</div><div class="label">Upcoming events</div></div></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="stat-tile"><div class="icon icon--info"><i class="bi bi-flag-fill"></i></div>
+            <div>
+                <div class="value" style="font-size:1.35rem;">@(next is null ? "—" : next.EventDate.ToString("d MMM yyyy"))</div>
+                <div class="label">@(next is null ? "No upcoming events" : $"Next: {next.Title}")</div>
+            </div></div></div>
+    </div>
+
+    @if (Model.Events.Count == 0)
+    {
+        <div class="rd-card empty-state">
+            <i class="bi bi-megaphone icon" aria-hidden="true"></i>
+            <h3>Create your first event</h3>
+            <p>Set the date, venue and distances — athletes can enrol as soon as it's published.</p>
+            <a class="btn btn-primary" asp-action="CreateEvent"><i class="bi bi-plus-lg"></i> New event</a>
+        </div>
+    }
+    else
+    {
+        foreach (var (title, list) in new[] { ("Upcoming events", Model.Upcoming), ("Past events", Model.Past) })
+        {
+            if (list.Count == 0) continue;
+            <div class="d-flex justify-content-between align-items-baseline mb-3 mt-2">
+                <h2 class="mb-0">@title</h2>
+                <span class="text-muted">@list.Count</span>
+            </div>
+            <div class="row g-4 mb-4">
+                @foreach (var e in list)
+                {
+                    var pct = e.TotalCapacity == 0 ? 0 : Math.Min(100, (int)Math.Round(100.0 * e.ConfirmedEnrolments / e.TotalCapacity));
+                    <div class="col-md-6 col-xxl-4">
+                        <article class="org-card">
+                            <div class="org-card__banner">
+                                @if (!string.IsNullOrEmpty(e.BannerImageUrl))
+                                {
+                                    <img src="@e.BannerImageUrl" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div class="banner-fallback banner-fallback--@e.EventType.ToLowerInvariant()"><i class="bi @StatusStyles.EventTypeIcon(e.EventType)" aria-hidden="true"></i></div>
+                                }
+                                <span class="org-card__date">@e.EventDate.ToString("d MMM yyyy")</span>
+                            </div>
+                            <div class="org-card__body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <partial name="_TypeChip" model="e.EventType" />
+                                    @if (e.ResultsCaptured > 0)
+                                    {
+                                        <partial name="_StatusBadge" model="@("Published")" />
+                                    }
+                                    else if (title == "Past events" && e.ConfirmedEnrolments > 0)
+                                    {
+                                        <partial name="_StatusBadge" model="@("Awaiting result")" />
+                                    }
+                                </div>
+                                <h3><a asp-action="EditEvent" asp-route-id="@e.EventId">@e.Title</a></h3>
+                                <p class="meta"><i class="bi bi-geo-alt"></i> @e.VenueName, @e.City</p>
+
+                                <dl class="org-card__stats">
+                                    <div><dt>Enrolled</dt><dd>@e.ConfirmedEnrolments.ToString("N0")<small> / @e.TotalCapacity.ToString("N0")</small></dd></div>
+                                    <div><dt>Categories</dt><dd>@e.CategoryCount</dd></div>
+                                    <div><dt>Results</dt><dd>@e.ResultsCaptured</dd></div>
+                                </dl>
+                                <div class="capacity mb-3" title="@pct% full"><span style="width:@pct%"></span></div>
+
+                                @if (e.CategoryCount == 0)
+                                {
+                                    <a asp-action="Categories" asp-route-id="@e.EventId" class="badge-status badge-status--warning text-decoration-none mb-3"><i class="bi bi-exclamation-triangle"></i>Add categories so athletes can enrol</a>
+                                }
+
+                                <div class="org-card__actions">
+                                    <a class="btn btn-light btn-sm" asp-action="EditEvent" asp-route-id="@e.EventId"><i class="bi bi-pencil"></i> Edit</a>
+                                    <a class="btn btn-light btn-sm" asp-action="Categories" asp-route-id="@e.EventId"><i class="bi bi-signpost-split"></i> Categories</a>
+                                    <a class="btn btn-light btn-sm" asp-action="Enrolments" asp-route-id="@e.EventId"><i class="bi bi-people"></i> Enrolments</a>
+                                    <a class="btn btn-light btn-sm" asp-action="Results" asp-route-id="@e.EventId"><i class="bi bi-stopwatch"></i> Results</a>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

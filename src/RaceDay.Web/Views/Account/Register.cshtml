@@ -1,0 +1,75 @@
+@model RegisterViewModel
+@{ ViewData["Title"] = "Create account"; ViewData["FullWidth"] = true; }
+
+<div class="auth-wrap">
+    <section class="auth-side" aria-hidden="true">
+        <p class="eyebrow mb-2">Join RaceDay</p>
+        <h2>Every finish<br />line starts<br /><span class="accent">right here.</span></h2>
+        <p>Athletes enrol in events and track their results. Organisers create events, manage categories and publish finish times.</p>
+    </section>
+
+    <section class="auth-form">
+        <div class="rd-card">
+            <div class="rd-card-body p-4 p-md-5">
+                <p class="eyebrow mb-1">Get started</p>
+                <h1 class="h2 mb-4">Create your account</h1>
+
+                <form asp-action="Register" method="post" novalidate>
+                    <div asp-validation-summary="ModelOnly"></div>
+
+                    <fieldset class="mb-4">
+                        <legend class="form-label">I want to…</legend>
+                        <div class="role-choice">
+                            <div>
+                                <input type="radio" asp-for="Role" value="@RoleNames.Participant" id="role-participant" />
+                                <label for="role-participant"><i class="bi bi-lightning-charge-fill"></i><strong>Take part</strong><small>Enter events &amp; track my results</small></label>
+                            </div>
+                            <div>
+                                <input type="radio" asp-for="Role" value="@RoleNames.Organiser" id="role-organiser" />
+                                <label for="role-organiser"><i class="bi bi-megaphone-fill"></i><strong>Organise</strong><small>Create events &amp; publish results</small></label>
+                            </div>
+                        </div>
+                        <span asp-validation-for="Role"></span>
+                    </fieldset>
+
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control" autocomplete="name" />
+                        <span asp-validation-for="FullName"></span>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-7">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" autocomplete="email" />
+                            <span asp-validation-for="Email"></span>
+                        </div>
+                        <div class="col-sm-5">
+                            <label asp-for="PhoneNumber" class="form-label">Phone <span class="text-muted fw-normal">(optional)</span></label>
+                            <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" placeholder="082 123 4567" />
+                            <span asp-validation-for="PhoneNumber"></span>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-control" autocomplete="new-password" aria-describedby="pw-help" />
+                            <span asp-validation-for="Password"></span>
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="ConfirmPassword" class="form-label"></label>
+                            <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="ConfirmPassword"></span>
+                        </div>
+                        <div id="pw-help" class="form-text mt-1">At least 8 characters.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" data-busy-text="Creating account…">Create account <i class="bi bi-arrow-right"></i></button>
+                </form>
+
+                <p class="text-center text-muted mt-4 mb-0">Already registered? <a asp-action="Login">Log in</a></p>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,101 @@
+@model ResultsEntryViewModel
+@{
+    var e = Model.Event;
+    ViewData["Title"] = $"Results · {e.Title}";
+}
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li><li class="breadcrumb-item active" aria-current="page">@e.Title</li></ol></nav>
+        <h1>@e.Title</h1>
+        <partial name="_OrganiserEventTabs" model='(e.EventId, "Results")' />
+    </div>
+</section>
+}
+
+<div class="container">
+    @if (!Model.IsPast)
+    {
+        <div class="alert flash flash-info mb-4"><i class="bi bi-info-circle-fill"></i>
+            <div>This event takes place on <strong>@e.EventDate.ToString("d MMMM yyyy")</strong>. Results are normally captured after the race.</div>
+        </div>
+    }
+
+    <section class="rd-card">
+        <div class="rd-card-header">
+            <div>
+                <h2>Capture &amp; publish results</h2>
+                <span class="text-muted small">@Model.Captured of @Model.Rows.Count published. Each saved row is visible to athletes immediately.</span>
+            </div>
+            <form method="get" asp-action="Results" asp-route-id="@e.EventId" class="d-flex gap-2">
+                <select name="categoryId" class="form-select form-select-sm" style="width:auto" aria-label="Category" onchange="this.form.submit()">
+                    <option value="">All categories</option>
+                    @foreach (var c in e.Categories)
+                    {
+                        <option value="@c.CategoryId" selected="@(Model.CategoryId == c.CategoryId)">@c.Name (@c.DistanceKm.Km())</option>
+                    }
+                </select>
+                <noscript><button class="btn btn-sm btn-dark">Go</button></noscript>
+            </form>
+        </div>
+
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-stopwatch icon" aria-hidden="true"></i>
+                <h3>No confirmed participants</h3>
+                <p>Results can be captured for athletes with a confirmed enrolment.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table rd-table">
+                    <thead><tr><th>Race no.</th><th>Participant</th><th>Category</th><th>Status</th><th>Finish time</th><th>Position</th><th class="text-end">Publish</th></tr></thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            var en = row.Enrolment;
+                            var r = row.Result;
+                            var formId = $"res-{en.EnrolmentId}";
+                            <tr id="row-@en.EnrolmentId" data-result-row>
+                                <td><span class="bib">@en.BibNumber</span></td>
+                                <td class="title-cell">@en.ParticipantName
+                                    @if (r is not null) { <div class="mt-1"><partial name="_StatusBadge" model="@("Published")" /></div> }
+                                </td>
+                                <td>@en.CategoryName</td>
+                                <td style="width:190px">
+                                    <select form="@formId" name="Status" class="form-select form-select-sm" aria-label="Result status for @en.ParticipantName">
+                                        @foreach (var s in new[] { "Finished", "DNF", "DNS" })
+                                        {
+                                            <option value="@s" selected="@((r?.Status ?? "Finished") == s)">@(s switch { "DNF" => "DNF – did not finish", "DNS" => "DNS – did not start", _ => s })</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td style="width:140px">
+                                    <input form="@formId" name="FinishTime" value="@(r?.FinishTime is null ? "" : r.FinishTime.ToRaceTime())" class="form-control form-control-sm font-monospace"
+                                           placeholder="hh:mm:ss" pattern="\d{1,2}:[0-5]\d:[0-5]\d" title="hh:mm:ss, e.g. 01:45:30" data-finished-only aria-label="Finish time for @en.ParticipantName" />
+                                </td>
+                                <td style="width:100px">
+                                    <input form="@formId" name="Position" value="@r?.Position" type="number" min="1" class="form-control form-control-sm" data-finished-only aria-label="Position for @en.ParticipantName" />
+                                </td>
+                                <td class="text-end">
+                                    <form id="@formId" asp-action="SaveResult" method="post">
+                                        <input type="hidden" name="EventId" value="@e.EventId" />
+                                        <input type="hidden" name="EnrolmentId" value="@en.EnrolmentId" />
+                                        <input type="hidden" name="ResultId" value="@r?.ResultId" />
+                                        <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+                                        <button type="submit" class="btn btn-sm @(r is null ? "btn-primary" : "btn-light")">
+                                            <i class="bi @(r is null ? "bi-send" : "bi-arrow-repeat")"></i> @(r is null ? "Publish" : "Update")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

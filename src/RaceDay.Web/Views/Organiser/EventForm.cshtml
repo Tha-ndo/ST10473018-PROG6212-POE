@@ -1,0 +1,185 @@
+@model EventFormViewModel
+@{
+    ViewData["Title"] = Model.IsEdit ? $"Edit {Model.Title}" : "New event";
+    var categories = ViewData["Categories"] as List<CategoryDto>;
+}
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li><li class="breadcrumb-item active" aria-current="page">@(Model.IsEdit ? "Edit event" : "New event")</li></ol></nav>
+        <h1>@(Model.IsEdit ? Model.Title : "Create an event")</h1>
+        @if (Model.IsEdit)
+        {
+            <partial name="_OrganiserEventTabs" model='(Model.EventId!.Value, "EditEvent")' />
+        }
+        else
+        {
+            <p class="mb-0 mt-2">Fill in the details below. You can add more distance or age categories on the next step.</p>
+        }
+    </div>
+</section>
+}
+
+<div class="container">
+    <form asp-action="@(Model.IsEdit ? "EditEvent" : "CreateEvent")" asp-route-id="@Model.EventId" method="post" enctype="multipart/form-data" novalidate>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <section class="rd-card">
+                    <div class="rd-card-body">
+                        <div asp-validation-summary="ModelOnly"></div>
+
+                        <h2 class="form-section-title">Event details</h2>
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label"></label>
+                            <input asp-for="Title" class="form-control" placeholder="e.g. Soweto Marathon 2027" />
+                            <span asp-validation-for="Title"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="5" placeholder="Route highlights, start times, what to bring…"></textarea>
+                            <span asp-validation-for="Description"></span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="EventDate" class="form-label"></label>
+                                <input asp-for="EventDate" type="date" class="form-control" />
+                                <span asp-validation-for="EventDate"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="EventType" class="form-label"></label>
+                                <select asp-for="EventType" class="form-select">
+                                    @foreach (var t in EventTypes.All)
+                                    {
+                                        <option value="@t">@t</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="EventType"></span>
+                            </div>
+                        </div>
+
+                        <h2 class="form-section-title">Location</h2>
+                        <label asp-for="VenueId" class="form-label"></label>
+                        <div class="input-group">
+                            <select asp-for="VenueId" class="form-select">
+                                <option value="">Choose a venue…</option>
+                                @foreach (var v in Model.Venues)
+                                {
+                                    <option value="@v.VenueId">@v.Name — @v.City@(string.IsNullOrEmpty(v.Province) ? "" : $", {v.Province}")</option>
+                                }
+                            </select>
+                            <a class="btn btn-light" asp-action="NewVenue" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)"><i class="bi bi-plus-lg"></i> New venue</a>
+                        </div>
+                        <span asp-validation-for="VenueId"></span>
+
+                        @if (!Model.IsEdit)
+                        {
+                            <h2 class="form-section-title">Distance &amp; entry</h2>
+                            <p class="text-muted small">This becomes the event's first category. Add more distances or age groups afterwards.</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="FirstCategoryName" class="form-label"></label>
+                                    <input asp-for="FirstCategoryName" class="form-control" placeholder="e.g. Half Marathon" />
+                                    <span asp-validation-for="FirstCategoryName"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="FirstCategoryDistanceKm" class="form-label"></label>
+                                    <div class="input-group">
+                                        <input asp-for="FirstCategoryDistanceKm" type="number" step="0.01" min="0.01" class="form-control" placeholder="21.1" />
+                                        <span class="input-group-text">km</span>
+                                    </div>
+                                    <span asp-validation-for="FirstCategoryDistanceKm"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="FirstCategoryEntryFee" class="form-label"></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R</span>
+                                        <input asp-for="FirstCategoryEntryFee" type="number" step="0.01" min="0" class="form-control" />
+                                    </div>
+                                    <span asp-validation-for="FirstCategoryEntryFee"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="FirstCategoryMaxParticipants" class="form-label"></label>
+                                    <input asp-for="FirstCategoryMaxParticipants" type="number" min="1" class="form-control" />
+                                    <span asp-validation-for="FirstCategoryMaxParticipants"></span>
+                                </div>
+                            </div>
+                        }
+                        else if (categories is not null)
+                        {
+                            <h2 class="form-section-title">Distances</h2>
+                            <p class="mb-0">
+                                @if (categories.Count == 0)
+                                {
+                                    <span class="text-muted">No categories yet.</span>
+                                }
+                                else
+                                {
+                                    @string.Join(" · ", categories.Select(c => $"{c.Name} ({c.DistanceKm.Km()})"))
+                                }
+                                <a asp-action="Categories" asp-route-id="@Model.EventId" class="ms-2">Manage categories <i class="bi bi-arrow-right"></i></a>
+                            </p>
+                        }
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <section class="rd-card mb-4">
+                    <div class="rd-card-header"><h3>Banner image</h3></div>
+                    <div class="rd-card-body">
+                        <div id="banner-preview" class="banner-preview mb-3">
+                            @if (!string.IsNullOrEmpty(Model.ExistingBannerUrl))
+                            {
+                                <img src="@Model.ExistingBannerUrl" alt="Current banner" />
+                            }
+                            else
+                            {
+                                <div class="banner-fallback banner-fallback--@Model.EventType.ToLowerInvariant()"><i class="bi bi-image" aria-hidden="true"></i></div>
+                            }
+                        </div>
+                        <label asp-for="Banner" class="form-label">@(string.IsNullOrEmpty(Model.ExistingBannerUrl) ? "Upload a banner" : "Replace banner")</label>
+                        <input asp-for="Banner" type="file" class="form-control" accept="image/jpeg,image/png,image/webp,image/gif" data-preview="#banner-preview" aria-describedby="banner-help" />
+                        <div id="banner-help" class="form-text">Wide images work best (16:9). JPG, PNG, WEBP or GIF up to 5 MB. Stored in Azure Blob Storage.</div>
+                    </div>
+                </section>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg" data-busy-text="Saving…">
+                        <i class="bi bi-check2-circle"></i> @(Model.IsEdit ? "Save changes" : "Create event")
+                    </button>
+                    <a asp-action="Dashboard" class="btn btn-light">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.IsEdit)
+    {
+        <div class="row g-4 mt-1">
+            <div class="col-lg-8 offset-lg-0">
+                <section class="rd-card border-danger-subtle">
+                    <div class="rd-card-body d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1">Danger zone</h3>
+                            <p class="text-muted small mb-0">Events that already have enrolments can't be deleted.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            @if (!string.IsNullOrEmpty(Model.ExistingBannerUrl))
+                            {
+                                <form asp-action="RemoveBanner" asp-route-id="@Model.EventId" method="post" data-confirm="Remove the banner image?">
+                                    <button type="submit" class="btn btn-light"><i class="bi bi-image"></i> Remove banner</button>
+                                </form>
+                            }
+                            <form asp-action="DeleteEvent" asp-route-id="@Model.EventId" method="post" data-confirm="Delete @Model.Title? This cannot be undone.">
+                                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete event</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

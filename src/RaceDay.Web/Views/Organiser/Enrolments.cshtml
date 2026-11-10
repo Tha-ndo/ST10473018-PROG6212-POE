@@ -1,0 +1,75 @@
+@model EnrolmentsPageViewModel
+@{
+    var e = Model.Event;
+    ViewData["Title"] = $"Enrolments · {e.Title}";
+}
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li><li class="breadcrumb-item active" aria-current="page">@e.Title</li></ol></nav>
+        <h1>@e.Title</h1>
+        <partial name="_OrganiserEventTabs" model='(e.EventId, "Enrolments")' />
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="stat-tile"><div class="icon"><i class="bi bi-people-fill"></i></div><div><div class="value">@Model.TotalConfirmed</div><div class="label">Confirmed</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--info"><i class="bi bi-x-circle"></i></div><div><div class="value">@Model.TotalCancelled</div><div class="label">Cancelled</div></div></div></div>
+        <div class="col-md-4"><div class="stat-tile"><div class="icon icon--ink"><i class="bi bi-calendar-event"></i></div><div><div class="value" style="font-size:1.35rem;">@e.EventDate.ToString("d MMM yyyy")</div><div class="label">Event date</div></div></div></div>
+    </div>
+
+    <section class="rd-card">
+        <div class="rd-card-header">
+            <h2>Participants</h2>
+            <form method="get" asp-action="Enrolments" asp-route-id="@e.EventId" class="d-flex flex-wrap gap-2" role="search" aria-label="Filter enrolments">
+                <input name="search" value="@Model.Search" class="form-control form-control-sm" style="width: 180px;" placeholder="Name or race no." aria-label="Search by name or race number" />
+                <select name="categoryId" class="form-select form-select-sm" style="width: auto;" aria-label="Category">
+                    <option value="">All categories</option>
+                    @foreach (var c in e.Categories)
+                    {
+                        <option value="@c.CategoryId" selected="@(Model.CategoryId == c.CategoryId)">@c.Name</option>
+                    }
+                </select>
+                <select name="status" class="form-select form-select-sm" style="width: auto;" aria-label="Status">
+                    <option value="">Any status</option>
+                    <option value="Confirmed" selected="@(Model.Status == "Confirmed")">Confirmed</option>
+                    <option value="Cancelled" selected="@(Model.Status == "Cancelled")">Cancelled</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-funnel"></i> Filter</button>
+            </form>
+        </div>
+
+        @if (Model.Enrolments.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-people icon" aria-hidden="true"></i>
+                <h3>No enrolments@(Model.CategoryId is not null || Model.Status is not null || Model.Search is not null ? " match your filters" : " yet")</h3>
+                <p>Share the event page so athletes can enter.</p>
+                <a class="btn btn-light" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId"><i class="bi bi-eye"></i> View public page</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table rd-table">
+                    <thead><tr><th>Race no.</th><th>Participant</th><th>Category</th><th>Enrolled on</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var en in Model.Enrolments)
+                        {
+                            <tr>
+                                <td>@if (en.BibNumber is not null) { <span class="bib">@en.BibNumber</span> }</td>
+                                <td class="title-cell">@en.ParticipantName</td>
+                                <td>@en.CategoryName</td>
+                                <td class="text-nowrap">@en.EnrolmentDate.ToString("d MMM yyyy, HH:mm")</td>
+                                <td><partial name="_StatusBadge" model="en.Status" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

@@ -1,0 +1,81 @@
+@model ProfileViewModel
+@{ ViewData["Title"] = "My profile"; }
+
+@section Hero {
+<section class="page-band">
+    <div class="container">
+        <p class="eyebrow mb-1">@Model.Role</p>
+        <h1>My profile</h1>
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <section class="rd-card text-center">
+                <div class="rd-card-body">
+                    <div id="photo-preview" class="d-flex justify-content-center mb-3" data-img-class="avatar avatar-xl">
+                        @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                        {
+                            <img class="avatar avatar-xl" src="@Model.ProfilePictureUrl" alt="Your profile picture" />
+                        }
+                        else
+                        {
+                            <span class="avatar avatar-xl" aria-hidden="true">@CurrentUser.Initials</span>
+                        }
+                    </div>
+                    <h2 class="h3 mb-1">@Model.FullName</h2>
+                    <p class="text-muted mb-3">@Model.Email</p>
+                    <span class="role-pill @(Model.Role == RoleNames.Organiser ? "role-pill--organiser" : "role-pill--participant") d-inline-block mb-4" style="@(Model.Role == RoleNames.Participant ? "background: var(--rd-orange-soft); color: var(--rd-orange-dark);" : "")">@Model.Role</span>
+
+                    <form asp-action="Photo" method="post" enctype="multipart/form-data" class="text-start">
+                        <label for="photo" class="form-label">Profile picture</label>
+                        <input id="photo" name="photo" type="file" class="form-control" accept="image/jpeg,image/png,image/webp,image/gif"
+                               data-preview="#photo-preview" required aria-describedby="photo-help" />
+                        <div id="photo-help" class="form-text">JPG, PNG, WEBP or GIF, up to 5 MB. Stored securely in the cloud.</div>
+                        <button type="submit" class="btn btn-dark w-100 mt-3" data-busy-text="Uploading…"><i class="bi bi-cloud-arrow-up"></i> Upload picture</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-8">
+            <section class="rd-card">
+                <div class="rd-card-header"><h2>Personal information</h2></div>
+                <div class="rd-card-body">
+                    <form asp-action="Index" method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly"></div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="FullName" class="form-label"></label>
+                                <input asp-for="FullName" class="form-control" autocomplete="name" />
+                                <span asp-validation-for="FullName"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" />
+                                <span asp-validation-for="PhoneNumber"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="email-ro">Email</label>
+                                <input id="email-ro" class="form-control" value="@Model.Email" readonly disabled />
+                                <div class="form-text">Your email is your login and can't be changed.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="since-ro">Member since</label>
+                                <input id="since-ro" class="form-control" value="@Model.CreatedAt.ToString("d MMMM yyyy")" readonly disabled />
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" data-busy-text="Saving…"><i class="bi bi-check2"></i> Save changes</button>
+                            <a asp-action="Index" class="btn btn-light">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

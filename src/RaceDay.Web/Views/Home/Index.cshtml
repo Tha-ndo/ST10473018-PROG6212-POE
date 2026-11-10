@@ -1,0 +1,107 @@
+@model EventBrowseViewModel
+@{ ViewData["Title"] = "Upcoming events"; }
+
+@section Hero {
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <p class="eyebrow mb-2"><i class="bi bi-lightning-charge-fill"></i> @(CurrentUser.IsParticipant ? $"Hey {CurrentUser.FullName?.Split(' ')[0]}," : "South Africa's race calendar")</p>
+                <h1 class="mb-3">Find your next <span class="accent">start line.</span></h1>
+                <p class="lead mb-0">Road runs, fun walks and cycle tours — pick your distance, enrol in seconds and chase a new PB.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="hero-stat">
+                    <span class="value">@Model.Events.Count</span>
+                    <span class="label">upcoming event@(Model.Events.Count == 1 ? "" : "s")@(Model.HasFilters ? " match your filters" : " open for entries")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+}
+
+<div class="container">
+    <div class="row g-4">
+        @* ----- Filter panel ----- *@
+        <aside class="col-lg-3">
+            <form method="get" asp-action="Index" class="rd-card filter-panel" role="search" aria-label="Filter events">
+                <h2 class="filter-panel__title"><i class="bi bi-sliders"></i> Filters</h2>
+                <div class="mb-3">
+                    <label for="Search" class="form-label">Search</label>
+                    <input id="Search" name="Search" value="@Model.Search" class="form-control" placeholder="Event, venue or city" />
+                </div>
+                <fieldset class="mb-3">
+                    <legend class="form-label">Type</legend>
+                    <div class="type-toggle">
+                        <input type="radio" class="btn-check" name="Type" id="type-all" value="" checked="@(string.IsNullOrEmpty(Model.Type))" />
+                        <label class="btn" for="type-all">All</label>
+                        @foreach (var t in EventTypes.All)
+                        {
+                            <input type="radio" class="btn-check" name="Type" id="type-@t" value="@t" checked="@(Model.Type == t)" />
+                            <label class="btn" for="type-@t"><i class="bi @StatusStyles.EventTypeIcon(t)"></i> @t</label>
+                        }
+                    </div>
+                </fieldset>
+                <div class="mb-3">
+                    <label for="Province" class="form-label">Province</label>
+                    <select id="Province" name="Province" class="form-select">
+                        <option value="">All provinces</option>
+                        @foreach (var p in Model.Provinces)
+                        {
+                            <option value="@p" selected="@(Model.Province == p)">@p</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="From" class="form-label">From</label>
+                    <input id="From" name="From" type="date" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="mb-4">
+                    <label for="To" class="form-label">To</label>
+                    <input id="To" name="To" type="date" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Apply filters</button>
+                @if (Model.HasFilters)
+                {
+                    <a asp-action="Index" class="btn btn-light w-100 mt-2">Clear all</a>
+                }
+            </form>
+        </aside>
+
+        @* ----- Event list ----- *@
+        <section class="col-lg-9" aria-labelledby="events-heading">
+            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <h2 id="events-heading" class="mb-0">@(Model.HasFilters ? "Matching events" : "Upcoming events")</h2>
+                <span class="text-muted">@Model.Events.Count result@(Model.Events.Count == 1 ? "" : "s")</span>
+            </div>
+
+            @if (ViewData["LoadError"] is string loadError)
+            {
+                <div class="alert flash flash-error"><i class="bi bi-x-octagon-fill"></i> @loadError</div>
+            }
+
+            @if (Model.Events.Count == 0)
+            {
+                <div class="rd-card empty-state">
+                    <i class="bi bi-calendar-x icon" aria-hidden="true"></i>
+                    <h3>No events found</h3>
+                    <p>@(Model.HasFilters ? "Try widening your search or clearing the filters." : "New events are added all the time — check back soon.")</p>
+                    @if (Model.HasFilters)
+                    {
+                        <a asp-action="Index" class="btn btn-primary">Clear filters</a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="event-list">
+                    @foreach (var e in Model.Events)
+                    {
+                        <partial name="_EventRow" model="(e, Model.EnrolledEventIds.Contains(e.EventId))" />
+                    }
+                </div>
+            }
+        </section>
+    </div>
+</div>
