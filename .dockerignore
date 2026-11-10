@@ -1,0 +1,18 @@
+# Keep the Docker build context small and free of local artefacts / secrets
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/TestResults/
+**/secrets.json
+**/appsettings.*.local.json
+.git/
+.github/
+docs/
+tests/
+Dockerfile
+.dockerignore
+README.md
